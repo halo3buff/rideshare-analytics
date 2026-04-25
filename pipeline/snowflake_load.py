@@ -3,14 +3,18 @@ import pandas as pd
 import duckdb
 import os
 
-# Snowflake connection settings
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 SNOWFLAKE_CONFIG = {
-    "account": "gnitcrv-bf86916",
-    "user": "YOUR_USERNAME",
-    "password": "YOUR_PASSWORD",
-    "warehouse": "COMPUTE_WH",
-    "database": "RIDESHARE",
-    "schema": "RAW"
+    "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+    "user": os.getenv("SNOWFLAKE_USER"),
+    "password": os.getenv("SNOWFLAKE_PASSWORD"),
+    "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
+    "database": os.getenv("SNOWFLAKE_DATABASE"),
+    "schema": os.getenv("SNOWFLAKE_SCHEMA")
 }
 
 def get_snowflake_connection():
