@@ -1,0 +1,33 @@
+# Python virtual environment
+venv/
+
+# Raw data files - too large for GitHub
+data/
+
+# Database files
+*.duckdb
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment variables and secrets
+.env
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# dbt
+rideshare/target/
+rideshare/dbt_packages/
+rideshare/logs/
+
+
+logs/
+rideshare/profiles.yml
