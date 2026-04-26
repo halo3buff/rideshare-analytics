@@ -1,8 +1,6 @@
 import snowflake.connector
 import pandas as pd
 import duckdb
-import os
-
 from dotenv import load_dotenv
 import os
 
@@ -61,37 +59,53 @@ def create_raw_tables(con):
     print("Tables created.")
 
 def load_trips(sf_con):
+    from snowflake.connector.pandas_tools import write_pandas
+
     print("Reading trips from DuckDB...")
     duck_con = duckdb.connect("warehouse.duckdb")
     df = duck_con.execute("SELECT * FROM raw_trips").df()
     duck_con.close()
+
+    # Uppercase column names to match Snowflake's convention
+    df.columns = [col.upper() for col in df.columns]
+
+    # Convert timestamp columns to strings
+    timestamp_cols = ["REQUEST_DATETIME", "ON_SCENE_DATETIME",
+                      "PICKUP_DATETIME", "DROPOFF_DATETIME"]
+    for col in timestamp_cols:
+        if col in df.columns:
+            df[col] = df[col].astype(str).replace('NaT', None)
+
     print(f"Loaded {len(df):,} rows from DuckDB. Uploading to Snowflake...")
 
-    chunk_size = 100000
-    total_chunks = len(df) // chunk_size + 1
-    
-    for i, chunk_start in enumerate(range(0, len(df), chunk_size)):
-        chunk = df.iloc[chunk_start:chunk_start + chunk_size]
-        data = [tuple(row) for row in chunk.itertuples(index=False)]
-        sf_con.cursor().executemany(
-            f"INSERT INTO RAW.RAW_TRIPS VALUES ({','.join(['%s'] * len(df.columns))})",
-            data
-        )
-        print(f"Chunk {i+1}/{total_chunks} uploaded")
+    success, nchunks, nrows, _ = write_pandas(
+        conn=sf_con,
+        df=df,
+        table_name="RAW_TRIPS",
+        schema="RAW",
+        database="RIDESHARE",
+        chunk_size=100000,
+        auto_create_table=False
+    )
 
-    print("Trips upload complete.")
+    print(f"Upload complete. {nrows:,} rows loaded in {nchunks} chunks.")
 
 def load_zones(sf_con):
+    from snowflake.connector.pandas_tools import write_pandas
     print("Loading zones...")
     duck_con = duckdb.connect("warehouse.duckdb")
     df = duck_con.execute("SELECT * FROM raw_zones").df()
     duck_con.close()
-    data = [tuple(row) for row in df.itertuples(index=False)]
-    sf_con.cursor().executemany(
-        "INSERT INTO RAW.RAW_ZONES VALUES (%s, %s, %s, %s)",
-        data
+    df.columns = [col.upper() for col in df.columns]
+    success, nchunks, nrows, _ = write_pandas(
+        conn=sf_con,
+        df=df,
+        table_name="RAW_ZONES",
+        schema="RAW",
+        database="RIDESHARE",
+        auto_create_table=False
     )
-    print(f"Zones loaded: {len(df):,} rows")
+    print(f"Zones loaded: {nrows:,} rows")
 
 if __name__ == "__main__":
     sf_con = get_snowflake_connection()
