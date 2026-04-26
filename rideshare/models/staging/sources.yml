@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    database: RIDESHARE
+    schema: raw
+    tables:
+      - name: RAW_TRIPS
+      - name: RAW_ZONES
