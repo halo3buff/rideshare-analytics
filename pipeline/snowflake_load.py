@@ -93,6 +93,10 @@ def load_trips(sf_con):
 def load_zones(sf_con):
     from snowflake.connector.pandas_tools import write_pandas
     print("Loading zones...")
+
+    # Clear existing data before loading to prevent duplicates
+    sf_con.cursor().execute("TRUNCATE TABLE IF EXISTS RIDESHARE.RAW.RAW_ZONES")
+
     duck_con = duckdb.connect("warehouse.duckdb")
     df = duck_con.execute("SELECT * FROM raw_zones").df()
     duck_con.close()
