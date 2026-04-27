@@ -17,7 +17,7 @@ summary as (
         -- Trip
         round(avg(trip_miles), 2) as avg_trip_miles,
         round(avg(trip_duration_minutes), 2) as avg_duration_minutes,
-        round(avg(tip_percentage), 2) as avg_tip_pct,
+        round(avg(avg_speed_mph), 2) as avg_speed_mph,
 
         -- Revenue metrics
         round(sum(total_fare), 2) as total_revenue,
