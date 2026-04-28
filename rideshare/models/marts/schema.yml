@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: fct_trips
+    columns:
+      - name: trip_id
+        tests:
+          - unique
+          - not_null
+      - name: company
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Uber', 'Lyft']
+      - name: pickup_datetime
+        tests:
+          - not_null
+      - name: pickup_borough
+        tests:
+          - not_null
+      - name: dropoff_borough
+        tests:
+          - not_null
+
+  - name: monthly_summary
+    columns:
+      - name: company
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Uber', 'Lyft']
+      - name: pickup_borough
+        tests:
+          - not_null
+
+  - name: route_profitability
+    columns:
+      - name: pickup_borough
+        tests:
+          - not_null
+      - name: dropoff_borough
+        tests:
+          - not_null

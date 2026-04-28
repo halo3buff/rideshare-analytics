@@ -10,6 +10,10 @@ zones as (
 
 joined as (
     select
+
+        -- Primary Key
+        row_number() over (order by t.pickup_datetime, t.pickup_zone_id, t.dropoff_zone_id) as trip_id,
+
         -- Company
         t.company,
 

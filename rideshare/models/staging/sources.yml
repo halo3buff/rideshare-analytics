@@ -6,4 +6,32 @@ sources:
     schema: raw
     tables:
       - name: RAW_TRIPS
+        columns:
+          - name: dispatching_base_num
+            tests:
+              - not_null
+          - name: hvfhs_license_num
+            tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['HV0003', 'HV0005']
+          - name: pickup_datetime
+            tests:
+              - not_null
+          - name: dropoff_datetime
+            tests:
+              - not_null
+          - name: PULocationID
+            tests:
+              - not_null
+          - name: DOLocationID
+            tests:
+              - not_null
+
       - name: RAW_ZONES
+        columns:
+          - name: LocationID
+            tests:
+              - unique
+              - not_null
