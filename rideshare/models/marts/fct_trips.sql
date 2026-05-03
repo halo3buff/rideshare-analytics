@@ -20,12 +20,12 @@ joined as (
         -- Pickup Locatiuons
         t.pickup_zone_id,
         pz.zone_name as pickup_zone,
-        pz.borough as pickup_borough,
+        coalesce(pz.borough, 'Unknown') as pickup_borough,
 
         -- Dropoff Locations
         t.dropoff_zone_id,
         dz.zone_name as dropoff_zone,
-        dz.borough as dropoff_borough,
+        coalesce(dz.borough, 'Unknown') as dropoff_borough,
 
         -- Time dimensions
         t.pickup_datetime,

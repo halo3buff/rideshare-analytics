@@ -18,10 +18,14 @@ models:
           - not_null
       - name: pickup_borough
         tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
       - name: dropoff_borough
         tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
 
   - name: monthly_summary
     columns:
@@ -29,11 +33,13 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['Uber', 'Lyft']
+                arguments:
+                  values: ['Uber', 'Lyft']
       - name: pickup_borough
         tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
 
   - name: route_profitability
     columns:

@@ -1,8 +1,9 @@
 import snowflake.connector
 import pandas as pd
-import duckdb
-from dotenv import load_dotenv
 import os
+import glob
+from dotenv import load_dotenv
+from snowflake.connector.pandas_tools import write_pandas
 
 load_dotenv()
 
@@ -19,7 +20,7 @@ def get_snowflake_connection():
     return snowflake.connector.connect(**SNOWFLAKE_CONFIG)
 
 def create_raw_tables(con):
-    print("Creating raw tables in Snowflake...")
+    print("Creating raw tables if they dont exist...")
     con.cursor().execute("""
         CREATE TABLE IF NOT EXISTS RAW.RAW_TRIPS (
             hvfhs_license_num VARCHAR,
@@ -56,51 +57,56 @@ def create_raw_tables(con):
             service_zone VARCHAR
         )
     """)
-    print("Tables created.")
+    print("Tables ready.")
 
 def load_trips(sf_con):
-    from snowflake.connector.pandas_tools import write_pandas
+    # Find all parquet files in data folder
+    parquet_files = sorted(glob.glob("data/fhvhv_tripdata_*.parquet"))
+    
+    if not parquet_files:
+        print("No parquet files found in data/ folder.")
+        return
 
-    print("Reading trips from DuckDB...")
-    duck_con = duckdb.connect("warehouse.duckdb")
-    df = duck_con.execute("SELECT * FROM raw_trips").df()
-    duck_con.close()
+    # Truncate once before loading all files
+    print("Truncating RAW_TRIPS before reload...")
+    sf_con.cursor().execute("TRUNCATE TABLE IF EXISTS RIDESHARE.RAW.RAW_TRIPS")
 
-    # Uppercase column names to match Snowflake's convention
-    df.columns = [col.upper() for col in df.columns]
+    for filepath in parquet_files:
+        filename = os.path.basename(filepath)
+        print(f"Loading {filename}...")
 
-    # Convert timestamp columns to strings
-    timestamp_cols = ["REQUEST_DATETIME", "ON_SCENE_DATETIME",
-                      "PICKUP_DATETIME", "DROPOFF_DATETIME"]
-    for col in timestamp_cols:
-        if col in df.columns:
-            df[col] = df[col].astype(str).replace('NaT', None)
+        df = pd.read_parquet(filepath)
+        df.columns = [col.upper() for col in df.columns]
 
-    print(f"Loaded {len(df):,} rows from DuckDB. Uploading to Snowflake...")
+        # Convert timestamps to strings for Snowflake compatibility
+        timestamp_cols = ["REQUEST_DATETIME", "ON_SCENE_DATETIME",
+                          "PICKUP_DATETIME", "DROPOFF_DATETIME"]
+        for col in timestamp_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str).replace('NaT', None)
 
-    success, nchunks, nrows, _ = write_pandas(
-        conn=sf_con,
-        df=df,
-        table_name="RAW_TRIPS",
-        schema="RAW",
-        database="RIDESHARE",
-        chunk_size=100000,
-        auto_create_table=False
-    )
+        print(f"  {len(df):,} rows — uploading...")
 
-    print(f"Upload complete. {nrows:,} rows loaded in {nchunks} chunks.")
+        success, nchunks, nrows, _ = write_pandas(
+            conn=sf_con,
+            df=df,
+            table_name="RAW_TRIPS",
+            schema="RAW",
+            database="RIDESHARE",
+            chunk_size=100000,
+            auto_create_table=False
+        )
+        print(f"  Done. {nrows:,} rows loaded in {nchunks} chunks.")
+
+    print("All trip files loaded.")
 
 def load_zones(sf_con):
-    from snowflake.connector.pandas_tools import write_pandas
     print("Loading zones...")
-
-    # Clear existing data before loading to prevent duplicates
     sf_con.cursor().execute("TRUNCATE TABLE IF EXISTS RIDESHARE.RAW.RAW_ZONES")
 
-    duck_con = duckdb.connect("warehouse.duckdb")
-    df = duck_con.execute("SELECT * FROM raw_zones").df()
-    duck_con.close()
+    df = pd.read_csv("data/taxi_zone_lookup.csv")
     df.columns = [col.upper() for col in df.columns]
+
     success, nchunks, nrows, _ = write_pandas(
         conn=sf_con,
         df=df,
