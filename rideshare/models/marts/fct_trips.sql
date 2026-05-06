@@ -72,4 +72,7 @@ joined as (
     left join zones dz on t.dropoff_zone_id = dz.zone_id
 )
 
-SELECT * FROM joined
+select * 
+from joined
+where pickup_borough not in ('N/A', 'EWR', 'Unknown')
+    and dropoff_borough not in ('N/A', 'EWR', 'Unknown')
